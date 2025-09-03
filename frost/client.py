@@ -6,18 +6,17 @@ from .models import SourcesResponse
 from .models import AvailableTimeSeriesResponse
 from .models import ObservationsResponse
 
-FROST_API_KEY = os.environ.get('FROST_API_KEY', None)
+FROST_API_KEY = os.environ.get("FROST_API_KEY", None)
 
 
 class APIError(Exception):
-    """ Raised when the API responds with a 400 og 404 """
+    """Raised when the API responds with a 400 og 404"""
 
     def __init__(self, e):
-        self.code = e['code']
+        self.code = e["code"]
 
 
 class Frost(object):
-
     """Interface to frost.met.no API
 
     The Frost API key should be exposed as a environment variable called
@@ -33,8 +32,8 @@ class Frost(object):
         """
         :param str username: your own frost.met.no username/key.
         """
-        self.base_url = 'https://frost.met.no/'
-        self.api_version = 'v0'
+        self.base_url = "https://frost.met.no/"
+        self.api_version = "v0"
         self.session = requests.Session()
         self.username = username or FROST_API_KEY
         if not self.username:
@@ -43,8 +42,9 @@ class Frost(object):
                 You must provide a username parameter
                 or set the FROST_API_KEY environment variable to
                 use the Frost class
-                """)
-        self.session.auth = (self.username, '')
+                """
+            )
+        self.session.auth = (self.username, "")
 
     def let_it_go(self):
         return """
@@ -67,18 +67,15 @@ class Frost(object):
         """
         Make an API request, with all kwargs passed through as URL params
         """
-        url = urljoin(self.base_url, method + '/' +
-                      self.api_version + '.jsonld')
-        response = self.session.get(
-            url,
-            params=kwargs, timeout=60)
+        url = urljoin(self.base_url, method + "/" + self.api_version + ".jsonld")
+        response = self.session.get(url, params=kwargs, timeout=60)
         if response.status_code < 200 or response.status_code > 500:
             response.raise_for_status()
         json = response.json()
-        if 'data' in json:
-            return json['data']
-        if 'error' in json:
-            raise APIError(json['error'])
+        if "data" in json:
+            return json["data"]
+        if "error" in json:
+            raise APIError(json["error"])
         return json
 
     def get_sources(self, **kwargs):
@@ -134,9 +131,7 @@ class Frost(object):
 
         kwargs = self.stringify_kwargs(kwargs)
 
-        res = self.make_request('sources',
-                                **kwargs
-                                )
+        res = self.make_request("sources", **kwargs)
         return SourcesResponse(res)
 
     def get_available_timeseries(self, include_sourcemeta=False, **kwargs):
@@ -191,14 +186,12 @@ class Frost(object):
 
         kwargs = self.stringify_kwargs(kwargs)
 
-        res = self.make_request('observations/availableTimeSeries',
-                                **kwargs
-                                )
+        res = self.make_request("observations/availableTimeSeries", **kwargs)
 
         sources = None
 
         if include_sourcemeta:
-            source_ids = list(set([s["sourceId"].split(':')[0] for s in res]))
+            source_ids = list(set([s["sourceId"].split(":")[0] for s in res]))
             sources = self.get_sources(ids=source_ids)
 
         return AvailableTimeSeriesResponse(res, sources=sources)
@@ -259,14 +252,12 @@ class Frost(object):
 
         kwargs = self.stringify_kwargs(kwargs)
 
-        res = self.make_request('observations',
-                                **kwargs
-                                )
+        res = self.make_request("observations", **kwargs)
 
         sources = None
 
         if include_sourcemeta:
-            source_ids = list(set([s["sourceId"].split(':')[0] for s in res]))
+            source_ids = list(set([s["sourceId"].split(":")[0] for s in res]))
             sources = self.get_sources(ids=source_ids)
 
         return ObservationsResponse(res, sources=sources)

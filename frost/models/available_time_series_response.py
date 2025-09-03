@@ -1,4 +1,6 @@
 import pprint
+import pandas as pd
+
 
 class AvailableTimeSeriesResponse(object):
 
@@ -27,43 +29,40 @@ class AvailableTimeSeriesResponse(object):
             (name etc) about the sources fewer columns
 
         """
-        try:
-            import pandas as pd
-            from pandas import json_normalize
-        except ImportError:
-            # dependency missing, issue a warning
-            import warnings
-            warnings.warn('Pandas dependency not found, please install with pip install frost-client[pandas] to enable to_df() feature')
-            return None
-        else:
-            compact_columns = [
-                "stationId", "sourceId", "validFrom", "timeOffset",
-                "timeResolution", "elementId",
-                "unit"]
+        compact_columns = [
+            "stationId",
+            "sourceId",
+            "validFrom",
+            "timeOffset",
+            "timeResolution",
+            "elementId",
+            "unit",
+        ]
 
-            df = json_normalize(self.series)
+        df = pd.json_normalize(self.series)
 
-            # change date columns to datetime
-            date_columns = ['validFrom', 'validTo']
+        # change date columns to datetime
+        date_columns = ["validFrom", "validTo"]
 
-            for c in date_columns:
-                if c in df.columns:
-                    df[c] = pd.to_datetime(df[c])
+        for c in date_columns:
+            if c in df.columns:
+                df[c] = pd.to_datetime(df[c])
 
-            # create an extra column with normalized sourceId
-            df["stationId"] = df['sourceId'].apply(lambda x: x.split(':')[0])
+        # create an extra column with normalized sourceId
+        df["stationId"] = df["sourceId"].apply(lambda x: x.split(":")[0])
 
-            if compact:
-                df = df[compact_columns]
+        if compact:
+            df = df[compact_columns]
 
-            # if we have metadataon the sources, merge it in
-            if self.sources:
-                sources_df = self.sources.to_df(compact=compact)
-                sources_df = sources_df.add_prefix('source.')
-                df = df.merge(sources_df, how="left", left_on="stationId",
-                            right_on="source.id")
+        # if we have metadataon the sources, merge it in
+        if self.sources:
+            sources_df = self.sources.to_df(compact=compact)
+            sources_df = sources_df.add_prefix("source.")
+            df = df.merge(
+                sources_df, how="left", left_on="stationId", right_on="source.id"
+            )
 
-            return df
+        return df
 
     def to_list(self):
         """Returns the sources as a Python list of dicts"""
@@ -71,9 +70,9 @@ class AvailableTimeSeriesResponse(object):
 
     def get_source_ids(self):
         """Returns unique source ids as a list"""
-        return list(set([s["sourceId"].split(':')[0] for s in self.series]))
+        return list(set([s["sourceId"].split(":")[0] for s in self.series]))
 
     def to_ids_list(self):
         """Returns only station IDs as a Python list"""
 
-        return [s['uri'] for s in self.series]
+        return [s["uri"] for s in self.series]
